@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useContext, useState } from "react";
 import { CartContext } from "../context/CartContext";
 import { getProductImage } from "../utils/assetMapper";
+import { API_BASE_URL } from "../api/api";
 
 export default function ProductCard({ product }) {
     const { addToCart } = useContext(CartContext);
@@ -21,7 +22,7 @@ export default function ProductCard({ product }) {
 
     // Construct image URL with premium fallback
     const imageUrl = product?.image
-        ? `http://localhost:5000/uploads/products/${product.image}`
+        ? `${API_BASE_URL}/uploads/products/${product.image}`
         : getProductImage(product?.id || 0);
 
     const productName = product?.name || "Untitled";

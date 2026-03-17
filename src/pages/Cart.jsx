@@ -1,6 +1,7 @@
 import { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
+import { API_BASE_URL } from "../api/api";
 
 export default function Cart() {
     const { cart, removeFromCart, updateQuantity } = useContext(CartContext);
@@ -292,7 +293,7 @@ export default function Cart() {
                                             }}>
                                                 {item.image && (
                                                     <img
-                                                        src={`http://localhost:5000/uploads/products/${item.image}`}
+                                                        src={`${API_BASE_URL}/uploads/products/${item.image}`}
                                                         alt={item.name}
                                                         style={{
                                                             width: '100%',

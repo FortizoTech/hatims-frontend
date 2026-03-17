@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { useParams } from "react-router-dom";
-import API from "../api/api";
+import API, { API_BASE_URL } from "../api/api";
 import { CartContext } from "../context/CartContext";
 import { getProductImage } from "../utils/assetMapper";
 
@@ -201,7 +201,7 @@ export default function ProductDetails() {
     ];
 
     const imageUrl = product?.image
-        ? `http://localhost:5000/uploads/products/${product.image}`
+        ? `${API_BASE_URL}/uploads/products/${product.image}`
         : getProductImage(product?.id || 0);
 
     return (
@@ -629,6 +629,8 @@ export default function ProductDetails() {
 function Truck(props) {
     return (
         <svg
+            width="24"
+            height="24"
             {...props}
             viewBox="0 0 24 24"
             fill="none"
@@ -648,6 +650,8 @@ function Truck(props) {
 function RefreshCw(props) {
     return (
         <svg
+            width="24"
+            height="24"
             {...props}
             viewBox="0 0 24 24"
             fill="none"

@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext } from "react";
 import { Link } from "react-router-dom";
-import API from "../api/api";
+import API, { API_BASE_URL } from "../api/api";
 import { AuthContext } from "../context/AuthContext";
 import { CartContext } from "../context/CartContext";
 import { getProductImage } from "../utils/assetMapper";
@@ -490,7 +490,7 @@ export default function Wishlist() {
                                         marginBottom: '20px'
                                     }}>
                                         <img
-                                            src={item.image ? `http://localhost:5000/uploads/products/${item.image}` : getProductImage(item?.id || 0)}
+                                            src={item.image ? `${API_BASE_URL}/uploads/products/${item.image}` : getProductImage(item?.id || 0)}
                                             alt={item.name}
                                             style={{
                                                 width: '100%',

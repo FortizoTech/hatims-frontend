@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star, Shield, Truck, RefreshCw } from 'lucide-react';
-import API from '../api/api';
+import API, { API_BASE_URL } from '../api/api';
 import { brandHero, mochaJersey, getProductImage, getLifestyleImage } from '../utils/assetMapper';
 
 export default function Home() {
@@ -406,7 +406,7 @@ export default function Home() {
                                                 </span>
                                                 <div style={{ overflow: 'hidden' }}>
                                                     <img
-                                                        src={product.name.toLowerCase().includes('mocha') ? mochaJersey : (product.image ? `http://localhost:5000/uploads/products/${product.image}` : '/api/placeholder/600/700')}
+                                                        src={product.name.toLowerCase().includes('mocha') ? mochaJersey : (product.image ? `${API_BASE_URL}/uploads/products/${product.image}` : '/api/placeholder/600/700')}
                                                         alt={product.name}
                                                         style={{
                                                             width: '100%',
