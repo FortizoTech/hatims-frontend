@@ -1,10 +1,32 @@
-import React, { useState } from 'react';
-import { Link } from "react-router-dom";
-import { Heart, ShoppingBag, User, Search, X, Menu } from "lucide-react";
+import React, { useState, useContext } from 'react';
+import { Link, useNavigate } from "react-router-dom";
+import { Heart, ShoppingBag, Search, X, Menu, LogOut, User, LayoutDashboard } from "lucide-react";
+import { AuthContext } from "../context/AuthContext";
+import { CartContext } from "../context/CartContext";
+import logo from "../assets/Hatims_Logo.png";
 
 export default function Navbar() {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    
+    const { user, logout } = useContext(AuthContext);
+    const { cart } = useContext(CartContext);
+    const navigate = useNavigate();
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+            setIsSearchOpen(false);
+            setSearchQuery('');
+        }
+    };
+
+    const handleLogout = () => {
+        logout();
+        navigate('/');
+    };
 
     return (
         <>
@@ -260,6 +282,57 @@ export default function Navbar() {
                     }
                 }
 
+                /* User Profile Dropdown */
+                .user-profile {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    cursor: pointer;
+                    font-size: 0.875rem;
+                    font-weight: 500;
+                    color: #1f2937;
+                    transition: color 0.2s;
+                }
+
+                .user-profile:hover {
+                    color: #b45309;
+                }
+                
+                .user-dropdown {
+                    display: none;
+                    position: absolute;
+                    top: 100%;
+                    right: 0;
+                    background: white;
+                    min-width: 150px;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 4px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    padding: 0.5rem 0;
+                    z-index: 100;
+                }
+
+                .user-profile:hover .user-dropdown {
+                    display: block;
+                }
+
+                .dropdown-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    padding: 0.5rem 1rem;
+                    color: #1f2937;
+                    text-decoration: none;
+                    font-size: 0.875rem;
+                    transition: background 0.2s;
+                }
+
+                .dropdown-item:hover {
+                    background: #f3f4f6;
+                    color: #b45309;
+                }
+
                 @media (max-width: 480px) {
                     .logo {
                         font-size: 1rem;
@@ -296,7 +369,7 @@ export default function Navbar() {
 
                     {/* Logo */}
                     <Link to="/" className="logo-link">
-                        <h1 className="logo">HATIMS</h1>
+                        <img src={logo} alt="HATIMS" style={{ height: '40px', objectFit: 'contain' }} />
                     </Link>
 
                     {/* Right Icons */}
@@ -315,31 +388,60 @@ export default function Navbar() {
                         <Link to="/cart" className="icon-link">
                             <div className="icon-wrapper">
                                 <ShoppingBag className="icon" />
-                                <span className="cart-badge">0</span>
+                                {cart.length > 0 && (
+                                    <span className="cart-badge">{cart.length}</span>
+                                )}
                             </div>
                         </Link>
 
-                        <Link to="/login" className="icon-link">
-                            <User className="icon" />
-                        </Link>
+                        {user ? (
+                            <div className="user-profile">
+                                <span>Hi, {user.name?.split(' ')[0] || 'User'}</span>
+                                <div className="user-dropdown">
+                                    {user.role === 'admin' && (
+                                        <Link to="/admin" className="dropdown-item">
+                                            <LayoutDashboard className="icon" style={{ width: '1rem', height: '1rem' }} />
+                                            Admin Dashboard
+                                        </Link>
+                                    )}
+                                    <button 
+                                        onClick={handleLogout}
+                                        className="dropdown-item" 
+                                        style={{ width: '100%', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}
+                                    >
+                                        <LogOut className="icon" style={{ width: '1rem', height: '1rem' }} />
+                                        Logout
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <Link to="/login" className="icon-link">
+                                <User className="icon" />
+                            </Link>
+                        )}
                     </div>
                 </div>
 
                 {/* Search Overlay */}
                 {isSearchOpen && (
                     <div className="search-overlay">
-                        <div className="search-container">
+                        <form className="search-container" onSubmit={handleSearch}>
                             <input
                                 type="text"
                                 placeholder="Search for products..."
                                 className="search-input"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 autoFocus
                             />
+                            <button type="submit" style={{ background: 'none', border: 'none', padding: 0, marginRight: '10px' }}>
+                                <Search className="icon" style={{ cursor: 'pointer', color: '#1f2937' }} />
+                            </button>
                             <X
                                 className="close-search icon"
                                 onClick={() => setIsSearchOpen(false)}
                             />
-                        </div>
+                        </form>
                     </div>
                 )}
 
@@ -349,6 +451,22 @@ export default function Navbar() {
                         <Link to="/" className="mobile-menu-item" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
                         <Link to="/products" className="mobile-menu-item" onClick={() => setIsMobileMenuOpen(false)}>Shop</Link>
                         <Link to="/orders" className="mobile-menu-item" onClick={() => setIsMobileMenuOpen(false)}>Orders</Link>
+                        {user ? (
+                            <>
+                                {user.role === 'admin' && (
+                                    <Link to="/admin" className="mobile-menu-item" onClick={() => setIsMobileMenuOpen(false)}>Admin Dashboard</Link>
+                                )}
+                                <button 
+                                    onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                                    className="mobile-menu-item"
+                                    style={{ width: '100%', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}
+                                >
+                                    Logout ({user.name})
+                                </button>
+                            </>
+                        ) : (
+                            <Link to="/login" className="mobile-menu-item" onClick={() => setIsMobileMenuOpen(false)}>Sign In</Link>
+                        )}
                     </div>
                 )}
             </nav>

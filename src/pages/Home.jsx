@@ -11,6 +11,7 @@ export default function Home() {
     const [error, setError] = useState(null);
     const [email, setEmail] = useState('');
     const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+    const [lookbookImages, setLookbookImages] = useState([]);
 
     // Color palette
     const colors = {
@@ -52,6 +53,16 @@ export default function Home() {
         };
 
         fetchProducts();
+
+        const fetchLookbookImages = async () => {
+            try {
+                const res = await API.get('/products/images');
+                setLookbookImages(res.data.slice(0, 3));
+            } catch (error) {
+                console.error('Error fetching lookbook images:', error);
+            }
+        };
+        fetchLookbookImages();
     }, []);
 
     // Handle newsletter subscription
@@ -493,15 +504,79 @@ export default function Home() {
                 </div>
             </section>
 
+            {/* About Us Section */}
+            <section style={{
+                padding: 'clamp(80px, 12vw, 120px) 0',
+                backgroundColor: colors.background
+            }}>
+                <div style={containerStyle}>
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                        gap: '60px',
+                        alignItems: 'center'
+                    }}>
+                        <div style={{ position: 'relative' }}>
+                            <img
+                                src={getLifestyleImage(2)}
+                                alt="About Hatims"
+                                style={{ width: '100%', height: 'auto', objectFit: 'cover' }}
+                            />
+                            <div style={{
+                                position: 'absolute',
+                                bottom: '-30px',
+                                right: '-30px',
+                                width: '200px',
+                                height: '200px',
+                                backgroundColor: colors.accent,
+                                zIndex: -1,
+                                display: window.innerWidth < 1024 ? 'none' : 'block'
+                            }} />
+                        </div>
+                        <div>
+                            <span style={{
+                                fontSize: '13px',
+                                letterSpacing: '4px',
+                                textTransform: 'uppercase',
+                                color: colors.grayText,
+                                display: 'block',
+                                marginBottom: '20px'
+                            }}>Our Story</span>
+                            <h2 style={{
+                                fontSize: 'clamp(28px, 5vw, 42px)',
+                                fontFamily: '"Times New Roman", serif',
+                                marginBottom: '25px',
+                                fontWeight: '400'
+                            }}>About HATIMS</h2>
+                            <p style={{
+                                fontSize: '17px',
+                                color: colors.grayText,
+                                lineHeight: '1.8',
+                                marginBottom: '20px'
+                            }}>
+                                Founded with a vision to celebrate elegance and modesty, HATIMS is more than just a brand; it's a testament to the modern woman's grace. We believe that modesty and luxury should go hand in hand, and our collections are meticulously crafted to reflect this philosophy.
+                            </p>
+                            <p style={{
+                                fontSize: '17px',
+                                color: colors.grayText,
+                                lineHeight: '1.8'
+                            }}>
+                                From the finest silk satins to premium jersey blends, every piece in our collection is chosen with an unwavering commitment to quality. Our journey began with a simple mission: to provide sophisticated, high-quality modest wear that empowers women to express their identity with confidence and style.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* Lookbook Section */}
             <section style={{
-                padding: '120px 0',
+                padding: '100px 0',
                 backgroundColor: colors.grayLight
             }}>
                 <div style={containerStyle}>
                     <div style={{
                         textAlign: 'center',
-                        marginBottom: '80px'
+                        marginBottom: '60px'
                     }}>
                         <span style={{
                             fontSize: '12px',
@@ -517,86 +592,114 @@ export default function Home() {
                             fontSize: 'clamp(32px, 5vw, 48px)',
                             fontWeight: '400',
                             fontFamily: '"Times New Roman", serif',
-                            margin: '0',
+                            margin: '0 0 20px 0',
                             color: colors.text
                         }}>
                             The HATIMS Lookbook
                         </h2>
+                        <p style={{ color: colors.grayText, maxWidth: '600px', margin: '0 auto 40px auto' }}>
+                            Discover how our community styles their favorite HATIMS pieces.
+                        </p>
                     </div>
 
                     <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(12, 1fr)',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
                         gap: '24px',
-                        gridAutoRows: 'minmax(200px, auto)'
+                        marginBottom: '50px'
                     }}>
-                        {/* Featured Lifestyle 1 */}
-                        <div style={{
-                            gridColumn: '1 / span 8',
-                            gridRow: '1 / span 2',
-                            overflow: 'hidden',
-                            position: 'relative'
-                        }}>
-                            <img
-                                src={getLifestyleImage(0)}
-                                alt="Lifestyle 1"
-                                style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.8s ease' }}
-                                onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-                                onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
-                            />
-                        </div>
+                        {lookbookImages.length > 0 ? (
+                            lookbookImages.map((img, idx) => (
+                                <div key={idx} style={{
+                                    height: '450px',
+                                    overflow: 'hidden',
+                                    position: 'relative',
+                                    backgroundColor: colors.grayMedium
+                                }}>
+                                    <img
+                                        src={`${API_BASE_URL}/uploads/products/${img.image_url}`}
+                                        alt={`Lookbook ${idx}`}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }}
+                                        onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                                        onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                                    />
+                                </div>
+                            ))
+                        ) : (
+                            // Fallback if no images found
+                            [0, 1, 2].map((i) => (
+                                <div key={i} style={{ height: '450px', backgroundColor: colors.grayMedium, opacity: 0.5 }} />
+                            ))
+                        )}
+                    </div>
 
-                        {/* Product Detail 1 */}
-                        <div style={{
-                            gridColumn: '9 / span 4',
-                            gridRow: '1 / span 1',
-                            overflow: 'hidden'
-                        }}>
-                            <img
-                                src={getProductImage(12)}
-                                alt="Product 12"
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                        </div>
+                    <div style={{ textAlign: 'center' }}>
+                        <Link to="/lookbook" style={{
+                            display: 'inline-block',
+                            padding: '15px 40px',
+                            border: `1px solid ${colors.text}`,
+                            color: colors.text,
+                            textDecoration: 'none',
+                            letterSpacing: '2px',
+                            fontSize: '14px',
+                            transition: 'all 0.3s ease'
+                        }}
+                            onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = colors.text;
+                                e.target.style.color = colors.background;
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = 'transparent';
+                                e.target.style.color = colors.text;
+                            }}>
+                            VIEW FULL LOOKBOOK
+                        </Link>
+                    </div>
+                </div>
+            </section>
 
-                        {/* Product Detail 2 */}
-                        <div style={{
-                            gridColumn: '9 / span 4',
-                            gridRow: '2 / span 1',
-                            overflow: 'hidden'
-                        }}>
-                            <img
-                                src={getProductImage(13)}
-                                alt="Product 14"
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                        </div>
+            {/* FAQ Section */}
+            <section style={{
+                padding: 'clamp(80px, 12vw, 120px) 0',
+                backgroundColor: colors.background
+            }}>
+                <div style={{ ...containerStyle, maxWidth: '900px' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+                        <h2 style={{
+                            fontSize: 'clamp(28px, 5vw, 42px)',
+                            fontFamily: '"Times New Roman", serif',
+                            marginBottom: '15px',
+                            fontWeight: '400'
+                        }}>Frequently Asked Questions</h2>
+                        <p style={{ color: colors.grayText }}>Everything you need to know about our products and services.</p>
+                    </div>
 
-                        {/* Featured Lifestyle 2 */}
-                        <div style={{
-                            gridColumn: '1 / span 4',
-                            gridRow: '3 / span 2',
-                            overflow: 'hidden'
-                        }}>
-                            <img
-                                src={getLifestyleImage(1)}
-                                alt="Lifestyle 2"
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                        </div>
-
-                        {/* Large Product Detail */}
-                        <div style={{
-                            gridColumn: '5 / span 8',
-                            gridRow: '3 / span 2',
-                            overflow: 'hidden'
-                        }}>
-                            <img
-                                src={getProductImage(14)}
-                                alt="Product 15"
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                        </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        {[
+                            { q: "What materials do you use for your hijabs?", a: "We source only the finest fabrics, including high-quality silk satins, premium viscose blends, and breathable jerseys. Each material is selected for its comfort, drape, and durability." },
+                            { q: "Do you ship worldwide?", a: "Yes, we ship to over 100 countries worldwide. Shipping costs and delivery times vary by location. Free worldwide shipping is available on orders over $150." },
+                            { q: "What is your return policy?", a: "We want you to be completely satisfied with your purchase. You can return any unworn items in their original packaging within 30 days of delivery for a full refund or exchange." },
+                            { q: "How should I care for my HATIMS pieces?", a: "We recommend hand washing your hijabs in cold water with a gentle detergent to maintain their color and texture. For silk items, dry cleaning is recommended." }
+                        ].map((faq, idx) => (
+                            <div key={idx} style={{
+                                padding: '30px',
+                                border: `1px solid ${colors.grayMedium}`,
+                                borderRadius: '4px'
+                            }}>
+                                <h3 style={{
+                                    fontSize: '18px',
+                                    fontWeight: '500',
+                                    marginBottom: '15px',
+                                    color: colors.text
+                                }}>{faq.q}</h3>
+                                <p style={{
+                                    fontSize: '16px',
+                                    color: colors.grayText,
+                                    lineHeight: '1.6',
+                                    margin: 0
+                                }}>{faq.a}</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>
@@ -699,84 +802,51 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* Footer */}
+            {/* Simple Footer */}
             <footer style={{
                 backgroundColor: colors.background,
-                padding: 'clamp(60px, 8vw, 80px) 0 clamp(30px, 4vw, 40px) 0'
+                padding: '60px 0',
+                borderTop: `1px solid ${colors.grayMedium}`
             }}>
-                <div style={containerStyle}>
+                <div style={{ ...containerStyle, textAlign: 'center' }}>
+                    <h3 style={{
+                        fontSize: '32px',
+                        fontFamily: '"Times New Roman", serif',
+                        fontWeight: '400',
+                        marginBottom: '30px',
+                        letterSpacing: '2px'
+                    }}>HATIMS</h3>
+
                     <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                        gap: 'clamp(40px, 6vw, 60px) clamp(20px, 4vw, 40px)',
-                        marginBottom: '60px'
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '30px',
+                        marginBottom: '30px',
+                        flexWrap: 'wrap'
                     }}>
-                        <div>
-                            <h3 style={{
-                                fontSize: 'clamp(24px, 3vw, 28px)',
-                                fontWeight: '400',
-                                fontFamily: '"Times New Roman", serif',
-                                margin: '0 0 25px 0',
-                                letterSpacing: '1px'
-                            }}>
-                                HATIMS
-                            </h3>
-                            <p style={{
-                                fontSize: 'clamp(14px, 1.8vw, 16px)',
+                        {["About Us", "Contact", "FAQs", "Shipping", "Privacy"].map((link, idx) => (
+                            <a key={idx} href="#" style={{
                                 color: colors.grayText,
-                                lineHeight: 1.7,
-                                maxWidth: '300px'
-                            }}>
-                                Luxury hijabs and modest fashion for the elegant woman.
-                            </p>
-                        </div>
-                        {[
-                            { title: "Quick Links", links: ["About Us", "Contact", "FAQs", "Shipping Info"] },
-                            { title: "Categories", links: ["New Arrivals", "Best Sellers", "Sale", "Collections"] },
-                            { title: "Follow Us", links: ["Instagram", "Facebook", "Pinterest", "TikTok"] }
-                        ].map((section, idx) => (
-                            <div key={idx}>
-                                <h4 style={{
-                                    fontSize: 'clamp(14px, 1.8vw, 16px)',
-                                    fontWeight: '500',
-                                    letterSpacing: '1px',
-                                    margin: '0 0 25px 0',
-                                    textTransform: 'uppercase'
-                                }}>
-                                    {section.title}
-                                </h4>
-                                <ul style={{
-                                    listStyle: 'none',
-                                    padding: 0,
-                                    margin: 0
-                                }}>
-                                    {section.links.map((link, linkIdx) => (
-                                        <li key={linkIdx} style={{ marginBottom: '15px' }}>
-                                            <a href="#" style={{
-                                                color: colors.grayText,
-                                                textDecoration: 'none',
-                                                fontSize: 'clamp(14px, 1.8vw, 16px)',
-                                                transition: 'color 0.3s ease'
-                                            }}
-                                                onMouseEnter={(e) => e.target.style.color = colors.text}
-                                                onMouseLeave={(e) => e.target.style.color = colors.grayText}>
-                                                {link}
-                                            </a>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                                textDecoration: 'none',
+                                fontSize: '14px',
+                                letterSpacing: '1px',
+                                transition: 'color 0.3s ease'
+                            }}
+                                onMouseEnter={(e) => e.target.style.color = colors.text}
+                                onMouseLeave={(e) => e.target.style.color = colors.grayText}>
+                                {link.toUpperCase()}
+                            </a>
                         ))}
                     </div>
-                    <div style={{
-                        borderTop: `1px solid ${colors.grayMedium}`,
-                        paddingTop: '40px',
-                        textAlign: 'center',
+
+                    <p style={{
                         color: colors.grayText,
-                        fontSize: 'clamp(13px, 1.5vw, 15px)'
+                        fontSize: '13px',
+                        letterSpacing: '1px',
+                        margin: 0
                     }}>
-                        <p style={{ margin: 0 }}>© 2024 HATIMS. All rights reserved. Luxury Hijabs & Modest Fashion</p>
-                    </div>
+                        © {new Date().getFullYear()} HATIMS. ALL RIGHTS RESERVED.
+                    </p>
                 </div>
             </footer>
 

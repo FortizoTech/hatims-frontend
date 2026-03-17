@@ -7,9 +7,10 @@ import { API_BASE_URL } from "../api/api";
 export default function ProductCard({ product }) {
     const { addToCart } = useContext(CartContext);
     const [imageLoaded, setImageLoaded] = useState(false);
+    const [hoverImageLoaded, setHoverImageLoaded] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
 
-    // Color palette matching the overall design
     const colors = {
         background: '#FFFFFF',
         text: '#282829',
@@ -20,48 +21,60 @@ export default function ProductCard({ product }) {
         grayText: '#6B6B6B'
     };
 
-    // Construct image URL with premium fallback
-    const imageUrl = product?.image
-        ? `${API_BASE_URL}/uploads/products/${product.image}`
-        : getProductImage(product?.id || 0);
+    // --- Image resolution ---
+    // Build all images from the product_images table (images[]) first,
+    // then fall back to the legacy `image` field, then to a local asset.
+    const buildUrl = (img) => {
+        if (!img) return null;
+        // Already a full URL (from product_images.image_url)?
+        if (img.startsWith("http") || img.startsWith("/")) return img;
+        return `${API_BASE_URL}/uploads/products/${img}`;
+    };
 
-    const productName = product?.name || "Untitled";
+    const imagesArray = product?.images?.length
+        ? product.images.map((i) => buildUrl(i.image_url)).filter(Boolean)
+        : product?.image
+            ? [`${API_BASE_URL}/uploads/products/${product.image}`]
+            : [getProductImage(product?.id || 0)];
+
+    const primaryUrl = imagesArray[0];
+    const hoverUrl   = imagesArray.length > 1 ? imagesArray[1] : null;
+
+    const productName  = product?.name  || "Untitled";
     const productPrice = product?.price ? `$${product.price}` : "Price upon request";
-    const productTag = product?.category || "New Arrival";
+    const productTag   = product?.category || "New Arrival";
 
     const handleAddToCart = async (e) => {
-        e.preventDefault(); // Prevent Link navigation
+        e.preventDefault();
         setIsAdding(true);
-
         try {
             await addToCart(product);
-
-            // Visual feedback
-            setTimeout(() => {
-                setIsAdding(false);
-            }, 1000);
-        } catch (error) {
-            console.error("Error adding to cart:", error);
+            setTimeout(() => setIsAdding(false), 1000);
+        } catch (err) {
+            console.error("Error adding to cart:", err);
             setIsAdding(false);
         }
     };
 
     return (
-        <div style={{
-            position: 'relative',
-            backgroundColor: colors.background,
-            transition: 'transform 0.4s ease',
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%'
-        }}
+        <div
+            style={{
+                position: 'relative',
+                backgroundColor: colors.background,
+                transition: 'transform 0.4s ease',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%'
+            }}
             onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-6px)';
+                setIsHovered(true);
             }}
             onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)';
-            }}>
-
+                setIsHovered(false);
+            }}
+        >
             {/* Product Tag */}
             <span style={{
                 position: 'absolute',
@@ -75,12 +88,12 @@ export default function ProductCard({ product }) {
                 textTransform: 'uppercase',
                 zIndex: 10,
                 fontWeight: '400',
-                pointerEvents: 'none' // Allows clicks to pass through to Link
+                pointerEvents: 'none'
             }}>
                 {productTag}
             </span>
 
-            {/* Image Container - Links to product detail */}
+            {/* Image Container */}
             <Link
                 to={`/product/${product.id}`}
                 style={{
@@ -119,28 +132,71 @@ export default function ProductCard({ product }) {
                         </div>
                     )}
 
-                    {/* Product Image */}
+                    {/* Primary Image */}
                     <img
-                        src={imageUrl}
+                        src={primaryUrl}
                         alt={productName}
                         onLoad={() => setImageLoaded(true)}
                         style={{
+                            position: 'absolute',
+                            inset: 0,
                             width: '100%',
                             height: '100%',
                             objectFit: 'cover',
-                            opacity: imageLoaded ? 1 : 0,
-                            transition: 'opacity 0.4s ease, transform 0.7s ease',
-                            display: 'block'
-                        }}
-                        onMouseEnter={(e) => {
-                            if (imageLoaded) {
-                                e.target.style.transform = 'scale(1.05)';
-                            }
-                        }}
-                        onMouseLeave={(e) => {
-                            e.target.style.transform = 'scale(1)';
+                            display: 'block',
+                            opacity: (imageLoaded && hoverUrl) ? (isHovered ? 0 : 1) : (imageLoaded ? 1 : 0),
+                            transition: 'opacity 0.55s ease, transform 0.7s ease',
+                            transform: isHovered ? 'scale(1.04)' : 'scale(1)'
                         }}
                     />
+
+                    {/* Hover Image (second image) — only rendered when available */}
+                    {hoverUrl && (
+                        <img
+                            src={hoverUrl}
+                            alt={`${productName} – alternate view`}
+                            onLoad={() => setHoverImageLoaded(true)}
+                            style={{
+                                position: 'absolute',
+                                inset: 0,
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                display: 'block',
+                                opacity: (hoverImageLoaded && isHovered) ? 1 : 0,
+                                transition: 'opacity 0.55s ease, transform 0.7s ease',
+                                transform: isHovered ? 'scale(1.04)' : 'scale(1.08)'
+                            }}
+                        />
+                    )}
+
+                    {/* Dot indicators — show when multiple images exist */}
+                    {imagesArray.length > 1 && (
+                        <div style={{
+                            position: 'absolute',
+                            bottom: '12px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            display: 'flex',
+                            gap: '6px',
+                            zIndex: 5,
+                            opacity: isHovered ? 1 : 0,
+                            transition: 'opacity 0.3s ease'
+                        }}>
+                            {imagesArray.slice(0, 4).map((_, i) => (
+                                <span key={i} style={{
+                                    width: '5px',
+                                    height: '5px',
+                                    borderRadius: '50%',
+                                    backgroundColor: i === (isHovered ? 1 : 0)
+                                        ? colors.background
+                                        : 'rgba(255,255,255,0.5)',
+                                    display: 'block',
+                                    transition: 'background-color 0.3s ease'
+                                }} />
+                            ))}
+                        </div>
+                    )}
                 </div>
             </Link>
 
@@ -152,24 +208,20 @@ export default function ProductCard({ product }) {
                 display: 'flex',
                 flexDirection: 'column'
             }}>
-                <Link
-                    to={`/product/${product.id}`}
-                    style={{
-                        textDecoration: 'none',
-                        color: 'inherit'
-                    }}
-                >
-                    <h3 style={{
-                        fontSize: '20px',
-                        fontWeight: '400',
-                        fontFamily: '"Times New Roman", serif',
-                        margin: '0 0 6px 0',
-                        color: colors.text,
-                        lineHeight: 1.4,
-                        transition: 'color 0.3s ease'
-                    }}
+                <Link to={`/product/${product.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <h3
+                        style={{
+                            fontSize: '20px',
+                            fontWeight: '400',
+                            fontFamily: '"Times New Roman", serif',
+                            margin: '0 0 6px 0',
+                            color: colors.text,
+                            lineHeight: 1.4,
+                            transition: 'color 0.3s ease'
+                        }}
                         onMouseEnter={(e) => e.target.style.color = colors.grayText}
-                        onMouseLeave={(e) => e.target.style.color = colors.text}>
+                        onMouseLeave={(e) => e.target.style.color = colors.text}
+                    >
                         {productName}
                     </h3>
                 </Link>
@@ -189,7 +241,7 @@ export default function ProductCard({ product }) {
                     disabled={isAdding}
                     style={{
                         backgroundColor: isAdding ? colors.accent : 'transparent',
-                        color: isAdding ? colors.text : colors.text,
+                        color: colors.text,
                         border: `1px solid ${colors.text}`,
                         padding: '12px 24px',
                         fontSize: '13px',
@@ -207,14 +259,14 @@ export default function ProductCard({ product }) {
                     }}
                     onMouseEnter={(e) => {
                         if (!isAdding) {
-                            e.target.style.backgroundColor = colors.text;
-                            e.target.style.color = colors.background;
+                            e.currentTarget.style.backgroundColor = colors.text;
+                            e.currentTarget.style.color = colors.background;
                         }
                     }}
                     onMouseLeave={(e) => {
                         if (!isAdding) {
-                            e.target.style.backgroundColor = 'transparent';
-                            e.target.style.color = colors.text;
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = colors.text;
                         }
                     }}
                 >
@@ -237,25 +289,12 @@ export default function ProductCard({ product }) {
                 </button>
             </div>
 
-            {/* Global styles for animations */}
-            <style jsx>{`
+            <style>{`
                 @keyframes spin {
                     to { transform: rotate(360deg); }
                 }
-                
                 @media (max-width: 640px) {
-                    div[style*="padding: 20px 0 0 0"] {
-                        padding: 15px 0 0 0 !important;
-                    }
-                    
-                    h3 {
-                        font-size: 18px !important;
-                    }
-                    
-                    button {
-                        padding: 10px 20px !important;
-                        max-width: 180px !important;
-                    }
+                    h3 { font-size: 18px !important; }
                 }
             `}</style>
         </div>

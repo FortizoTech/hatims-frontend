@@ -1,10 +1,12 @@
 import { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
+import { AuthContext } from "../context/AuthContext";
 import { API_BASE_URL } from "../api/api";
 
 export default function Cart() {
     const { cart, removeFromCart, updateQuantity } = useContext(CartContext);
+    const { user } = useContext(AuthContext);
     const [processing, setProcessing] = useState(false);
     const [removingItem, setRemovingItem] = useState(null);
     const navigate = useNavigate();
@@ -114,6 +116,101 @@ export default function Cart() {
                             Preparing your checkout
                         </p>
                     </div>
+                </div>
+            </div>
+        );
+    }
+    
+    // Not Logged In State
+    if (!user) {
+        return (
+            <div style={{
+                minHeight: '70vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.background,
+                padding: '40px 20px'
+            }}>
+                <div style={{
+                    textAlign: 'center',
+                    maxWidth: '500px'
+                }}>
+                    <span style={{
+                        fontSize: '72px',
+                        display: 'block',
+                        marginBottom: '24px',
+                        opacity: 0.3,
+                        color: colors.text
+                    }}>
+                        🛒
+                    </span>
+                    <h2 style={{
+                        fontSize: '28px',
+                        fontWeight: '400',
+                        fontFamily: '"Times New Roman", serif',
+                        margin: '0 0 16px 0',
+                        color: colors.text
+                    }}>
+                        Sign in to View Your Cart
+                    </h2>
+                    <p style={{
+                        fontSize: '16px',
+                        color: colors.grayText,
+                        margin: '0 0 32px 0',
+                        lineHeight: 1.6
+                    }}>
+                        Create an account or sign in to save your favorite items and check out securely.
+                    </p>
+                    <Link to="/login">
+                        <button style={{
+                            backgroundColor: colors.text,
+                            color: colors.background,
+                            border: `1px solid ${colors.text}`,
+                            padding: '14px 42px',
+                            fontSize: '14px',
+                            letterSpacing: '2px',
+                            textTransform: 'uppercase',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            marginRight: '15px'
+                        }}
+                            onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = colors.background;
+                                e.target.style.color = colors.text;
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = colors.text;
+                                e.target.style.color = colors.background;
+                            }}
+                        >
+                            Sign In
+                        </button>
+                    </Link>
+                    <Link to="/register">
+                        <button style={{
+                            backgroundColor: 'transparent',
+                            color: colors.text,
+                            border: `1px solid ${colors.text}`,
+                            padding: '14px 42px',
+                            fontSize: '14px',
+                            letterSpacing: '2px',
+                            textTransform: 'uppercase',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease'
+                        }}
+                            onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = colors.text;
+                                e.target.style.color = colors.background;
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = 'transparent';
+                                e.target.style.color = colors.text;
+                            }}
+                        >
+                            Create Account
+                        </button>
+                    </Link>
                 </div>
             </div>
         );

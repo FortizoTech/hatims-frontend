@@ -3,19 +3,20 @@ import { useParams } from "react-router-dom";
 import API, { API_BASE_URL } from "../api/api";
 import { CartContext } from "../context/CartContext";
 import { getProductImage } from "../utils/assetMapper";
+import ProductCard from "../components/ProductCard";
 
 export default function ProductDetails() {
     const { id } = useParams();
-    const [product, setProduct] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [selectedImage, setSelectedImage] = useState(0);
-    const [quantity, setQuantity] = useState(1);
-    const [isAdding, setIsAdding] = useState(false);
+    const [product, setProduct]       = useState(null);
+    const [loading, setLoading]       = useState(true);
+    const [error, setError]           = useState(null);
+    const [relatedProducts, setRelatedProducts] = useState([]);
+    const [selectedIndex, setSelectedIndex] = useState(0);
+    const [quantity, setQuantity]     = useState(1);
+    const [isAdding, setIsAdding]     = useState(false);
 
     const { addToCart } = useContext(CartContext);
 
-    // Color palette matching the design system
     const colors = {
         background: '#FFFFFF',
         text: '#282829',
@@ -26,7 +27,6 @@ export default function ProductDetails() {
         grayText: '#6B6B6B'
     };
 
-    // Shared container style
     const containerStyle = {
         maxWidth: '1440px',
         margin: '0 auto',
@@ -39,32 +39,58 @@ export default function ProductDetails() {
             try {
                 setLoading(true);
                 setError(null);
+                setSelectedIndex(0);
                 const res = await API.get(`/products/${id}`);
-                setProduct(res.data);
-            } catch (error) {
-                console.error("Error fetching product:", error);
+                const activeProduct = res.data;
+                setProduct(activeProduct);
+                
+                // Fetch related products (same category)
+                if (activeProduct.category_id) {
+                    try {
+                        const relatedRes = await API.get(`/products`); // we'll filter them client-side for now
+                        const allProducts = relatedRes.data;
+                        const filtered = allProducts.filter(p => 
+                            p.category_id === activeProduct.category_id && p.id !== activeProduct.id
+                        );
+                        // take up to 4 related products
+                        setRelatedProducts(filtered.slice(0, 4));
+                    } catch (relatedErr) {
+                        console.error("Error fetching related products:", relatedErr);
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching product:", err);
                 setError("Failed to load product details. Please try again.");
             } finally {
                 setLoading(false);
             }
         };
-
         fetchProduct();
     }, [id]);
 
+    // Build the ordered list of image URLs from the API response
+    const buildImageList = (prod) => {
+        if (!prod) return [];
+        const buildUrl = (src) => {
+            if (!src) return null;
+            if (src.startsWith("http") || src.startsWith("/")) return src;
+            return `${API_BASE_URL}/uploads/products/${src}`;
+        };
+
+        if (prod.images?.length) {
+            return prod.images.map((i) => buildUrl(i.image_url)).filter(Boolean);
+        }
+        if (prod.image) return [buildUrl(prod.image)];
+        return [getProductImage(prod.id || 0)];
+    };
+
     const handleAddToCart = async () => {
         setIsAdding(true);
-
         try {
-            // Add product with quantity
             await addToCart({ ...product, quantity });
-
-            // Visual feedback
-            setTimeout(() => {
-                setIsAdding(false);
-            }, 1000);
-        } catch (error) {
-            console.error("Error adding to cart:", error);
+            setTimeout(() => setIsAdding(false), 1000);
+        } catch (err) {
+            console.error("Error adding to cart:", err);
             setIsAdding(false);
         }
     };
@@ -99,22 +125,10 @@ export default function ProductDetails() {
                         animation: 'spin 0.8s linear infinite'
                     }} />
                     <div>
-                        <p style={{
-                            color: colors.text,
-                            fontSize: '16px',
-                            letterSpacing: '2px',
-                            textTransform: 'uppercase',
-                            margin: '0 0 8px 0',
-                            fontWeight: '400'
-                        }}>
+                        <p style={{ color: colors.text, fontSize: '16px', letterSpacing: '2px', textTransform: 'uppercase', margin: '0 0 8px 0', fontWeight: '400' }}>
                             Loading Product
                         </p>
-                        <p style={{
-                            color: colors.grayText,
-                            fontSize: '14px',
-                            margin: 0,
-                            fontWeight: '300'
-                        }}>
+                        <p style={{ color: colors.grayText, fontSize: '14px', margin: 0, fontWeight: '300' }}>
                             Please wait while we prepare the details
                         </p>
                     </div>
@@ -134,57 +148,24 @@ export default function ProductDetails() {
                 backgroundColor: colors.background,
                 padding: '40px 20px'
             }}>
-                <div style={{
-                    textAlign: 'center',
-                    maxWidth: '500px'
-                }}>
-                    <span style={{
-                        fontSize: '64px',
-                        display: 'block',
-                        marginBottom: '24px',
-                        opacity: 0.5,
-                        color: colors.text
-                    }}>
-                        ✦
-                    </span>
-                    <h2 style={{
-                        fontSize: '28px',
-                        fontWeight: '400',
-                        fontFamily: '"Times New Roman", serif',
-                        margin: '0 0 16px 0',
-                        color: colors.text
-                    }}>
+                <div style={{ textAlign: 'center', maxWidth: '500px' }}>
+                    <span style={{ fontSize: '64px', display: 'block', marginBottom: '24px', opacity: 0.5, color: colors.text }}>✦</span>
+                    <h2 style={{ fontSize: '28px', fontWeight: '400', fontFamily: '"Times New Roman", serif', margin: '0 0 16px 0', color: colors.text }}>
                         Product Not Found
                     </h2>
-                    <p style={{
-                        fontSize: '16px',
-                        color: colors.grayText,
-                        margin: '0 0 32px 0',
-                        lineHeight: 1.6
-                    }}>
+                    <p style={{ fontSize: '16px', color: colors.grayText, margin: '0 0 32px 0', lineHeight: 1.6 }}>
                         {error || "The product you're looking for doesn't exist or has been removed."}
                     </p>
                     <button
                         onClick={() => window.history.back()}
                         style={{
-                            backgroundColor: 'transparent',
-                            color: colors.text,
-                            border: `1px solid ${colors.text}`,
-                            padding: '14px 36px',
-                            fontSize: '14px',
-                            letterSpacing: '2px',
-                            textTransform: 'uppercase',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s ease'
+                            backgroundColor: 'transparent', color: colors.text,
+                            border: `1px solid ${colors.text}`, padding: '14px 36px',
+                            fontSize: '14px', letterSpacing: '2px', textTransform: 'uppercase',
+                            cursor: 'pointer', transition: 'all 0.3s ease'
                         }}
-                        onMouseEnter={(e) => {
-                            e.target.style.backgroundColor = colors.text;
-                            e.target.style.color = colors.background;
-                        }}
-                        onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = 'transparent';
-                            e.target.style.color = colors.text;
-                        }}
+                        onMouseEnter={(e) => { e.target.style.backgroundColor = colors.text; e.target.style.color = colors.background; }}
+                        onMouseLeave={(e) => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = colors.text; }}
                     >
                         Go Back
                     </button>
@@ -193,16 +174,11 @@ export default function ProductDetails() {
         );
     }
 
-    // Mock additional images (you can replace with actual product images array)
-    const productImages = [
-        product.image,
-        product.image, // Replace with additional images if available
-        product.image, // Replace with additional images if available
-    ];
+    const imageList = buildImageList(product);
+    const activeImage = imageList[selectedIndex] || imageList[0];
 
-    const imageUrl = product?.image
-        ? `${API_BASE_URL}/uploads/products/${product.image}`
-        : getProductImage(product?.id || 0);
+    const goNext = () => setSelectedIndex(prev => (prev + 1) % imageList.length);
+    const goPrev = () => setSelectedIndex(prev => (prev - 1 + imageList.length) % imageList.length);
 
     return (
         <div style={{
@@ -214,11 +190,7 @@ export default function ProductDetails() {
         }}>
             <div style={containerStyle}>
                 {/* Breadcrumb */}
-                <div style={{
-                    marginBottom: '40px',
-                    fontSize: '14px',
-                    color: colors.grayText
-                }}>
+                <div style={{ marginBottom: '40px', fontSize: '14px', color: colors.grayText }}>
                     <a href="/" style={{ color: colors.grayText, textDecoration: 'none' }}>Home</a>
                     <span style={{ margin: '0 8px' }}>/</span>
                     <a href="/products" style={{ color: colors.grayText, textDecoration: 'none' }}>Products</a>
@@ -233,65 +205,141 @@ export default function ProductDetails() {
                     gap: 'clamp(30px, 5vw, 60px)',
                     marginBottom: '80px'
                 }}>
-                    {/* Left Column - Images */}
+                    {/* ─── Left Column: Image Gallery ─── */}
                     <div>
-                        {/* Main Image */}
+                        {/* Main Image with optional arrow navigation */}
                         <div style={{
+                            position: 'relative',
                             backgroundColor: colors.grayLight,
                             overflow: 'hidden',
-                            marginBottom: '20px',
+                            marginBottom: '16px',
                             aspectRatio: '4/5'
                         }}>
                             <img
-                                src={imageUrl}
+                                key={activeImage}
+                                src={activeImage}
                                 alt={product.name}
                                 style={{
                                     width: '100%',
                                     height: '100%',
                                     objectFit: 'cover',
-                                    display: 'block'
+                                    display: 'block',
+                                    animation: 'fadeIn 0.4s ease'
                                 }}
                             />
+
+                            {/* Arrow Buttons — only when multiple images */}
+                            {imageList.length > 1 && (
+                                <>
+                                    <button
+                                        onClick={goPrev}
+                                        aria-label="Previous image"
+                                        style={{
+                                            position: 'absolute',
+                                            left: '12px',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            width: '40px',
+                                            height: '40px',
+                                            backgroundColor: 'rgba(255,255,255,0.85)',
+                                            border: 'none',
+                                            borderRadius: '50%',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '18px',
+                                            color: colors.text,
+                                            transition: 'background-color 0.25s ease',
+                                            zIndex: 4
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,1)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.85)'}
+                                    >
+                                        ‹
+                                    </button>
+                                    <button
+                                        onClick={goNext}
+                                        aria-label="Next image"
+                                        style={{
+                                            position: 'absolute',
+                                            right: '12px',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            width: '40px',
+                                            height: '40px',
+                                            backgroundColor: 'rgba(255,255,255,0.85)',
+                                            border: 'none',
+                                            borderRadius: '50%',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '18px',
+                                            color: colors.text,
+                                            transition: 'background-color 0.25s ease',
+                                            zIndex: 4
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,1)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.85)'}
+                                    >
+                                        ›
+                                    </button>
+
+                                    {/* Counter badge */}
+                                    <span style={{
+                                        position: 'absolute',
+                                        bottom: '14px',
+                                        right: '14px',
+                                        backgroundColor: 'rgba(0,0,0,0.45)',
+                                        color: '#fff',
+                                        fontSize: '12px',
+                                        letterSpacing: '1px',
+                                        padding: '4px 10px',
+                                        borderRadius: '20px',
+                                        zIndex: 4
+                                    }}>
+                                        {selectedIndex + 1} / {imageList.length}
+                                    </span>
+                                </>
+                            )}
                         </div>
 
-                        {/* Thumbnail Gallery */}
-                        {productImages.length > 1 && (
+                        {/* Thumbnail Strip */}
+                        {imageList.length > 1 && (
                             <div style={{
                                 display: 'grid',
-                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                gridTemplateColumns: `repeat(${Math.min(imageList.length, 5)}, 1fr)`,
                                 gap: '10px'
                             }}>
-                                {productImages.map((img, index) => (
+                                {imageList.map((url, index) => (
                                     <div
                                         key={index}
-                                        onClick={() => setSelectedImage(index)}
+                                        onClick={() => setSelectedIndex(index)}
+                                        role="button"
+                                        aria-label={`View image ${index + 1}`}
                                         style={{
                                             backgroundColor: colors.grayLight,
                                             aspectRatio: '1/1',
                                             cursor: 'pointer',
-                                            border: selectedImage === index
+                                            border: selectedIndex === index
                                                 ? `2px solid ${colors.text}`
                                                 : `2px solid transparent`,
-                                            transition: 'border-color 0.3s ease',
-                                            overflow: 'hidden'
+                                            transition: 'border-color 0.25s ease, opacity 0.25s ease',
+                                            overflow: 'hidden',
+                                            opacity: selectedIndex === index ? 1 : 0.65
                                         }}
                                         onMouseEnter={(e) => {
-                                            if (selectedImage !== index) {
-                                                e.currentTarget.style.opacity = '0.8';
-                                            }
+                                            if (selectedIndex !== index) e.currentTarget.style.opacity = '0.9';
                                         }}
                                         onMouseLeave={(e) => {
-                                            e.currentTarget.style.opacity = '1';
+                                            if (selectedIndex !== index) e.currentTarget.style.opacity = '0.65';
                                         }}
                                     >
                                         <img
-                                            src={imageUrl} // Replace with actual thumbnails
-                                            alt={`${product.name} view ${index + 1}`}
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                objectFit: 'cover'
-                                            }}
+                                            src={url}
+                                            alt={`${product.name} – view ${index + 1}`}
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                                         />
                                     </div>
                                 ))}
@@ -299,11 +347,9 @@ export default function ProductDetails() {
                         )}
                     </div>
 
-                    {/* Right Column - Product Info */}
-                    <div style={{
-                        padding: '20px 0'
-                    }}>
-                        {/* Product Tag/Category */}
+                    {/* ─── Right Column: Product Info ─── */}
+                    <div style={{ padding: '20px 0' }}>
+                        {/* Category tag */}
                         {product.category && (
                             <span style={{
                                 display: 'inline-block',
@@ -343,65 +389,37 @@ export default function ProductDetails() {
                             ${product.price}
                         </p>
 
-                        {/* Description */}
-                        <div style={{
-                            marginBottom: '40px'
-                        }}>
-                            <h3 style={{
-                                fontSize: '18px',
-                                fontWeight: '500',
-                                margin: '0 0 15px 0',
-                                letterSpacing: '1px',
-                                textTransform: 'uppercase'
+                        {/* Stock */}
+                        {product.stock !== undefined && (
+                            <p style={{
+                                fontSize: '14px',
+                                color: product.stock > 0 ? '#4CAF50' : '#e53935',
+                                margin: '0 0 24px 0',
+                                letterSpacing: '0.5px'
                             }}>
+                                {product.stock > 0 ? `✓ In stock (${product.stock} available)` : '✗ Out of stock'}
+                            </p>
+                        )}
+
+                        {/* Description */}
+                        <div style={{ marginBottom: '40px' }}>
+                            <h3 style={{ fontSize: '18px', fontWeight: '500', margin: '0 0 15px 0', letterSpacing: '1px', textTransform: 'uppercase' }}>
                                 Description
                             </h3>
-                            <p style={{
-                                fontSize: '16px',
-                                color: colors.grayText,
-                                lineHeight: 1.8,
-                                margin: 0
-                            }}>
+                            <p style={{ fontSize: '16px', color: colors.grayText, lineHeight: 1.8, margin: 0 }}>
                                 {product.description || "Experience the perfect blend of luxury and comfort with this meticulously crafted piece. Made from the finest materials, it's designed to elevate your everyday elegance."}
                             </p>
                         </div>
 
-                        {/* Additional Details */}
-                        <div style={{
-                            marginBottom: '40px'
-                        }}>
-                            <h3 style={{
-                                fontSize: '18px',
-                                fontWeight: '500',
-                                margin: '0 0 15px 0',
-                                letterSpacing: '1px',
-                                textTransform: 'uppercase'
-                            }}>
+                        {/* Details */}
+                        <div style={{ marginBottom: '40px' }}>
+                            <h3 style={{ fontSize: '18px', fontWeight: '500', margin: '0 0 15px 0', letterSpacing: '1px', textTransform: 'uppercase' }}>
                                 Details
                             </h3>
-                            <ul style={{
-                                listStyle: 'none',
-                                padding: 0,
-                                margin: 0
-                            }}>
-                                {[
-                                    '100% Premium Quality Fabric',
-                                    'Handcrafted with care',
-                                    'Ethically sourced materials',
-                                    'Easy care instructions'
-                                ].map((detail, index) => (
-                                    <li key={index} style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '10px',
-                                        marginBottom: '10px',
-                                        color: colors.grayText,
-                                        fontSize: '15px'
-                                    }}>
-                                        <span style={{
-                                            color: colors.text,
-                                            fontSize: '18px'
-                                        }}>✦</span>
+                            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                                {['100% Premium Quality Fabric', 'Handcrafted with care', 'Ethically sourced materials', 'Easy care instructions'].map((detail, i) => (
+                                    <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', color: colors.grayText, fontSize: '15px' }}>
+                                        <span style={{ color: colors.text, fontSize: '18px' }}>✦</span>
                                         {detail}
                                     </li>
                                 ))}
@@ -409,77 +427,31 @@ export default function ProductDetails() {
                         </div>
 
                         {/* Quantity Selector */}
-                        <div style={{
-                            marginBottom: '30px'
-                        }}>
-                            <h3 style={{
-                                fontSize: '16px',
-                                fontWeight: '500',
-                                margin: '0 0 15px 0',
-                                letterSpacing: '1px',
-                                textTransform: 'uppercase'
-                            }}>
+                        <div style={{ marginBottom: '30px' }}>
+                            <h3 style={{ fontSize: '16px', fontWeight: '500', margin: '0 0 15px 0', letterSpacing: '1px', textTransform: 'uppercase' }}>
                                 Quantity
                             </h3>
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '15px'
-                            }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                                 <button
                                     onClick={decrementQuantity}
-                                    style={{
-                                        width: '40px',
-                                        height: '40px',
-                                        backgroundColor: 'transparent',
-                                        border: `1px solid ${colors.grayMedium}`,
-                                        cursor: 'pointer',
-                                        fontSize: '18px',
-                                        transition: 'all 0.3s ease'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.target.style.backgroundColor = colors.grayLight;
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.target.style.backgroundColor = 'transparent';
-                                    }}
-                                >
-                                    −
-                                </button>
-                                <span style={{
-                                    fontSize: '18px',
-                                    minWidth: '40px',
-                                    textAlign: 'center'
-                                }}>
-                                    {quantity}
-                                </span>
+                                    style={{ width: '40px', height: '40px', backgroundColor: 'transparent', border: `1px solid ${colors.grayMedium}`, cursor: 'pointer', fontSize: '18px', transition: 'all 0.3s ease' }}
+                                    onMouseEnter={(e) => e.target.style.backgroundColor = colors.grayLight}
+                                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                                >−</button>
+                                <span style={{ fontSize: '18px', minWidth: '40px', textAlign: 'center' }}>{quantity}</span>
                                 <button
                                     onClick={incrementQuantity}
-                                    style={{
-                                        width: '40px',
-                                        height: '40px',
-                                        backgroundColor: 'transparent',
-                                        border: `1px solid ${colors.grayMedium}`,
-                                        cursor: 'pointer',
-                                        fontSize: '18px',
-                                        transition: 'all 0.3s ease'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.target.style.backgroundColor = colors.grayLight;
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.target.style.backgroundColor = 'transparent';
-                                    }}
-                                >
-                                    +
-                                </button>
+                                    style={{ width: '40px', height: '40px', backgroundColor: 'transparent', border: `1px solid ${colors.grayMedium}`, cursor: 'pointer', fontSize: '18px', transition: 'all 0.3s ease' }}
+                                    onMouseEnter={(e) => e.target.style.backgroundColor = colors.grayLight}
+                                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                                >+</button>
                             </div>
                         </div>
 
                         {/* Add to Cart Button */}
                         <button
                             onClick={handleAddToCart}
-                            disabled={isAdding}
+                            disabled={isAdding || product.stock === 0}
                             style={{
                                 width: '100%',
                                 maxWidth: '400px',
@@ -491,130 +463,61 @@ export default function ProductDetails() {
                                 fontWeight: '500',
                                 letterSpacing: '2px',
                                 textTransform: 'uppercase',
-                                cursor: isAdding ? 'default' : 'pointer',
+                                cursor: (isAdding || product.stock === 0) ? 'default' : 'pointer',
                                 transition: 'all 0.3s ease',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: '10px',
-                                marginBottom: '20px'
+                                marginBottom: '20px',
+                                opacity: product.stock === 0 ? 0.5 : 1
                             }}
-                            onMouseEnter={(e) => {
-                                if (!isAdding) {
-                                    e.target.style.backgroundColor = colors.background;
-                                    e.target.style.color = colors.text;
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (!isAdding) {
-                                    e.target.style.backgroundColor = colors.text;
-                                    e.target.style.color = colors.background;
-                                }
-                            }}
+                            onMouseEnter={(e) => { if (!isAdding && product.stock !== 0) { e.currentTarget.style.backgroundColor = colors.background; e.currentTarget.style.color = colors.text; } }}
+                            onMouseLeave={(e) => { if (!isAdding && product.stock !== 0) { e.currentTarget.style.backgroundColor = colors.text; e.currentTarget.style.color = colors.background; } }}
                         >
                             {isAdding ? (
                                 <>
-                                    <span style={{
-                                        display: 'inline-block',
-                                        width: '16px',
-                                        height: '16px',
-                                        border: `2px solid ${colors.text}`,
-                                        borderTopColor: 'transparent',
-                                        borderRadius: '50%',
-                                        animation: 'spin 0.6s linear infinite'
-                                    }} />
+                                    <span style={{ display: 'inline-block', width: '16px', height: '16px', border: `2px solid ${colors.text}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
                                     ADDED TO CART
                                 </>
-                            ) : (
-                                'ADD TO CART'
-                            )}
+                            ) : product.stock === 0 ? 'OUT OF STOCK' : 'ADD TO CART'}
                         </button>
 
-                        {/* Additional Info */}
-                        <div style={{
-                            fontSize: '14px',
-                            color: colors.grayText,
-                            borderTop: `1px solid ${colors.grayLight}`,
-                            paddingTop: '30px',
-                            marginTop: '30px'
-                        }}>
-                            <p style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '10px',
-                                margin: '0 0 10px 0'
-                            }}>
-                                <Truck size={16} />
-                                Free shipping on orders over $100
+                        {/* Shipping / Returns */}
+                        <div style={{ fontSize: '14px', color: colors.grayText, borderTop: `1px solid ${colors.grayLight}`, paddingTop: '30px', marginTop: '30px' }}>
+                            <p style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '0 0 10px 0' }}>
+                                <Truck size={16} /> Free shipping on orders over $100
                             </p>
-                            <p style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '10px',
-                                margin: 0
-                            }}>
-                                <RefreshCw size={16} />
-                                30-day easy returns
+                            <p style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+                                <RefreshCw size={16} /> 30-day easy returns
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* You May Also Like Section */}
-                <section style={{
-                    borderTop: `1px solid ${colors.grayLight}`,
-                    paddingTop: '60px'
-                }}>
-                    <h2 style={{
-                        fontSize: 'clamp(24px, 3vw, 32px)',
-                        fontWeight: '400',
-                        fontFamily: '"Times New Roman", serif',
-                        textAlign: 'center',
-                        margin: '0 0 40px 0'
-                    }}>
-                        You May Also Like
-                    </h2>
-
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                        gap: '30px'
-                    }}>
-                        {/* Placeholder for related products */}
-                        {[1, 2, 3, 4].map((item) => (
-                            <div key={item} style={{
-                                textAlign: 'center',
-                                opacity: 0.6
-                            }}>
-                                <div style={{
-                                    backgroundColor: colors.grayLight,
-                                    aspectRatio: '4/5',
-                                    marginBottom: '15px'
-                                }} />
-                                <p style={{
-                                    fontSize: '16px',
-                                    color: colors.grayText
-                                }}>
-                                    Related Product
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-                </section>
+                {/* You May Also Like */}
+                {relatedProducts.length > 0 && (
+                    <section style={{ borderTop: `1px solid ${colors.grayLight}`, paddingTop: '60px' }}>
+                        <h2 style={{ fontSize: 'clamp(24px, 3vw, 32px)', fontWeight: '400', fontFamily: '"Times New Roman", serif', textAlign: 'center', margin: '0 0 40px 0' }}>
+                            You May Also Like
+                        </h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '30px' }}>
+                            {relatedProducts.map(related => (
+                                <ProductCard key={related.id} product={related} />
+                            ))}
+                        </div>
+                    </section>
+                )}
             </div>
 
-            {/* Global Styles */}
-            <style jsx>{`
-                @keyframes spin {
-                    to { transform: rotate(360deg); }
-                }
-                
+            <style>{`
+                @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                 @media (max-width: 768px) {
                     div[style*="grid-template-columns: 1fr 1fr"] {
                         grid-template-columns: 1fr !important;
                     }
                 }
-                
                 @media (max-width: 480px) {
                     div[style*="padding: 80px 0 120px 0"] {
                         padding: 40px 0 80px 0 !important;
@@ -625,20 +528,10 @@ export default function ProductDetails() {
     );
 }
 
-// Icons component for shipping/returns
+// Icons
 function Truck(props) {
     return (
-        <svg
-            width="24"
-            height="24"
-            {...props}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
+        <svg width="24" height="24" {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="1" y="3" width="15" height="13" />
             <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
             <circle cx="5.5" cy="18.5" r="2.5" />
@@ -649,17 +542,7 @@ function Truck(props) {
 
 function RefreshCw(props) {
     return (
-        <svg
-            width="24"
-            height="24"
-            {...props}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
+        <svg width="24" height="24" {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M23 4v6h-6" />
             <path d="M1 20v-6h6" />
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />

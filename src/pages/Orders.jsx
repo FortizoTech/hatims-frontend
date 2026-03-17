@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import API from "../api/api";
+import { AuthContext } from "../context/AuthContext";
 
 export default function Orders() {
     const [orders, setOrders] = useState([]);
@@ -8,6 +9,8 @@ export default function Orders() {
     const [error, setError] = useState(null);
     const [expandedOrder, setExpandedOrder] = useState(null);
     const [filter, setFilter] = useState('all'); // all, processing, completed, cancelled
+
+    const { user } = useContext(AuthContext);
 
     // Color palette matching the design system
     const colors = {
@@ -49,8 +52,12 @@ export default function Orders() {
             }
         };
 
-        fetchOrders();
-    }, []);
+        if (user) {
+            fetchOrders();
+        } else {
+            setLoading(false);
+        }
+    }, [user]);
 
     const getStatusColor = (status) => {
         if (!status) return colors.grayText;
@@ -252,6 +259,101 @@ export default function Orders() {
                     >
                         Try Again
                     </button>
+                </div>
+            </div>
+        );
+    }
+    
+    // Not Logged In State
+    if (!user) {
+        return (
+            <div style={{
+                minHeight: '70vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.background,
+                padding: '40px 20px'
+            }}>
+                <div style={{
+                    textAlign: 'center',
+                    maxWidth: '500px'
+                }}>
+                    <span style={{
+                        fontSize: '72px',
+                        display: 'block',
+                        marginBottom: '24px',
+                        opacity: 0.3,
+                        color: colors.text
+                    }}>
+                        📦
+                    </span>
+                    <h2 style={{
+                        fontSize: '28px',
+                        fontWeight: '400',
+                        fontFamily: '"Times New Roman", serif',
+                        margin: '0 0 16px 0',
+                        color: colors.text
+                    }}>
+                        Sign in to View Your Orders
+                    </h2>
+                    <p style={{
+                        fontSize: '16px',
+                        color: colors.grayText,
+                        margin: '0 0 32px 0',
+                        lineHeight: 1.6
+                    }}>
+                        Track your packages, view past purchases, and manage your returns by signing in.
+                    </p>
+                    <Link to="/login">
+                        <button style={{
+                            backgroundColor: colors.text,
+                            color: colors.background,
+                            border: `1px solid ${colors.text}`,
+                            padding: '14px 42px',
+                            fontSize: '14px',
+                            letterSpacing: '2px',
+                            textTransform: 'uppercase',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            marginRight: '15px'
+                        }}
+                            onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = colors.background;
+                                e.target.style.color = colors.text;
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = colors.text;
+                                e.target.style.color = colors.background;
+                            }}
+                        >
+                            Sign In
+                        </button>
+                    </Link>
+                    <Link to="/register">
+                        <button style={{
+                            backgroundColor: 'transparent',
+                            color: colors.text,
+                            border: `1px solid ${colors.text}`,
+                            padding: '14px 42px',
+                            fontSize: '14px',
+                            letterSpacing: '2px',
+                            textTransform: 'uppercase',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease'
+                        }}
+                            onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = colors.text;
+                                e.target.style.color = colors.background;
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = 'transparent';
+                                e.target.style.color = colors.text;
+                            }}
+                        >
+                            Create Account
+                        </button>
+                    </Link>
                 </div>
             </div>
         );

@@ -80,7 +80,11 @@ export default function Login() {
             });
 
             login(res.data.user, res.data.token);
-            navigate("/");
+            if (res.data.user.role === "admin") {
+                navigate("/admin");
+            } else {
+                navigate("/");
+            }
         } catch (err) {
             const errorMessage = err.response?.data?.message || "Login failed. Please check your credentials.";
             setErrors({
