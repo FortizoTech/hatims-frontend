@@ -1,0 +1,31 @@
+import p1 from '../assets/products/product-1.png';
+import p2 from '../assets/products/product-2.png';
+import p3 from '../assets/products/product-3.png';
+import p4 from '../assets/products/product-4.png';
+import p5 from '../assets/products/product-5.png';
+import p6 from '../assets/products/product-6.png';
+import p7 from '../assets/products/product-7.png';
+import p8 from '../assets/products/product-8.png';
+import p9 from '../assets/products/product-9.png';
+import p10 from '../assets/products/product-10.png';
+import p11 from '../assets/products/product-11.jpg';
+import p12 from '../assets/products/product-12.jpg';
+import p13 from '../assets/products/product-13.png';
+import p14 from '../assets/products/product-14.png';
+import p15 from '../assets/products/product-15.png';
+import p16 from '../assets/products/product-16.png';
+import p17 from '../assets/products/product-17.png';
+import p18 from '../assets/products/product-18.png';
+import p19 from '../assets/products/product-19.png';
+import l1 from '../assets/products/lifestyle-1.png';
+import l2 from '../assets/products/lifestyle-2.png';
+import mocha from '../assets/products/mocha-jersey.png';
+import hero from '../assets/hero-premium.png';
+
+export const products = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19];
+export const lifestyle = [l1, l2];
+export const brandHero = hero;
+export const mochaJersey = mocha;
+
+export const getProductImage = (index) => products[index % products.length];
+export const getLifestyleImage = (index) => lifestyle[index % lifestyle.length];
