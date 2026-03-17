@@ -260,7 +260,6 @@ export default function Products() {
                         <p style={{
                             fontSize: '16px',
                             color: colors.grayText,
-                            margin: '0 0 32px 0',
                             lineHeight: 1.6,
                             maxWidth: '400px',
                             margin: '0 auto 32px auto'
