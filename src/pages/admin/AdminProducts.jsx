@@ -187,7 +187,7 @@ export default function AdminProducts() {
                             <tr key={p.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
                                 <td style={{ padding: '16px' }}>
                                     {p.image ? (
-                                        <img src={`http://localhost:5000/uploads/products/${p.image}`} alt={p.name} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '6px' }} />
+                                        <img src={`https://hatims-backend-repo.onrender.com/uploads/products/${p.image}`} alt={p.name} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '6px' }} />
                                     ) : (
                                         <div style={{ width: '48px', height: '48px', backgroundColor: '#f3f4f6', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
                                             <ImageIcon size={20} />
