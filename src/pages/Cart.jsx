@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 
 export default function Cart() {
-    const { cart, removeFromCart, updateQuantity, clearCart } = useContext(CartContext);
+    const { cart, removeFromCart, updateQuantity } = useContext(CartContext);
     const [processing, setProcessing] = useState(false);
     const [removingItem, setRemovingItem] = useState(null);
     const navigate = useNavigate();

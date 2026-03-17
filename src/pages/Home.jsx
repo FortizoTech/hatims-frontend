@@ -5,7 +5,7 @@ import API from '../api/api';
 import { brandHero, mochaJersey, getProductImage, getLifestyleImage } from '../utils/assetMapper';
 
 export default function Home() {
-    const [products, setProducts] = useState([]);
+
     const [featuredProducts, setFeaturedProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -38,7 +38,7 @@ export default function Home() {
                 setLoading(true);
                 setError(null);
                 const res = await API.get('/products');
-                setProducts(res.data);
+
 
                 // Get first 3 products for featured collection
                 // You can modify this logic based on your needs (e.g., filter by featured flag)
@@ -75,7 +75,7 @@ export default function Home() {
 
             // Clear success message after 5 seconds
             setTimeout(() => setSubscriptionStatus(null), 5000);
-        } catch (error) {
+        } catch {
             setSubscriptionStatus({ type: 'error', message: 'Something went wrong. Please try again.' });
         }
     };

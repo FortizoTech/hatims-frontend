@@ -57,7 +57,7 @@ export default function Wishlist() {
         }
     }, [user]);
 
-    const handleRemoveFromWishlist = async (wishlistItemId, productId) => {
+    const handleRemoveFromWishlist = async (wishlistItemId) => {
         try {
             setRemovingId(wishlistItemId);
             await API.delete(`/wishlist/${wishlistItemId}`);

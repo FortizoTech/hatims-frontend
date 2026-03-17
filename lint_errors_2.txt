@@ -1,0 +1,16 @@
+﻿
+> hatims-frontend@0.0.0 lint
+> eslint .
+
+
+C:\Users\Administrator\OneDrive\Desktop\Fortizo Projects\hatims-frontend-repo\src\context\AuthContext.jsx
+  3:14  error  Fast refresh only works when a file only exports components. Move your React context(s) to a separate file  react-refresh/only-export-components
+
+C:\Users\Administrator\OneDrive\Desktop\Fortizo Projects\hatims-frontend-repo\src\context\CartContext.jsx
+  3:14  error  Fast refresh only works when a file only exports components. Move your React context(s) to a separate file  react-refresh/only-export-components
+
+C:\Users\Administrator\OneDrive\Desktop\Fortizo Projects\hatims-frontend-repo\src\pages\Home.jsx
+  78:18  error  'err' is defined but never used  no-unused-vars
+
+Γ£û 3 problems (3 errors, 0 warnings)
+
